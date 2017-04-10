@@ -14,7 +14,9 @@
 
 import webapp2
 
-import validation
+import validation as val
+
+import escape as esc
 
 form = """
 <form method="post">
@@ -22,15 +24,15 @@ form = """
 	<br>
 	<label>
 		Month
-		<input type="text" name="month">
+		<input type="text" name="month" value="%(month)s">
 	</label>
 	<label>
 		Day
-		<input type="text" name="day">
+		<input type="text" name="day" value="%(day)s">
 	</label>
 	<label>
 		Year
-		<input type="text" name="year">
+		<input type="text" name="year" value="%(year)s">
 	</label>
 	<div style="color: red">%(error)s</div>
 	<input type="submit">
@@ -39,21 +41,28 @@ form = """
 
 
 class MainPage(webapp2.RequestHandler):
-	def write_form(self, error=""):
-		self.response.out.write(form % {"error": error})
+    def write_form(self, error="", month="", day="", year=""):
+        self.response.out.write(form % {"error": error,
+                                        "month": esc.escape_html(month),
+                                        "day": esc.escape_html(day),
+                                        "year": esc.escape_html(year)})
 
-	def get(self):
-		self.write_form()
+    def get(self):
+        self.write_form()
 
-	def post(self):
-		user_month = validation.valid_month(self.request.get('month'))
-		user_day = validation.valid_day(self.request.get('day'))
-		user_year = validation.valid_year(self.request.get('year'))
-		if not (user_month and user_day and user_year):
-			self.write_form("That doesn't look valid to me, buddy")
-		else:
-			self.response.out.write("Thanks, that's a totally valid day!")
+    def post(self):
+        user_month = self.request.get('month')
+        user_day = self.request.get('day')
+        user_year = self.request.get('year')
+        month = val.valid_month(user_month)
+        day = val.valid_day(user_day)
+        year = val.valid_year(user_year)
 
+        if not (month and day and year):
+            self.write_form("That doesn't look valid to me, buddy",
+                            user_month, user_day, user_year)
+        else:
+            self.response.out.write("Thanks, that's a totally valid day!")
 
 
 app = webapp2.WSGIApplication([('/', MainPage)], debug=True)
